@@ -58,7 +58,7 @@ void DirectMultiMeshInstance::set_material(Ref<Material> material) {
 }
 
 void DirectMultiMeshInstance::set_lod_and_fade(uint32_t p_instance, const uint8_t &lod, const float &p_fade) {
-	Color color{ 2.f / (1 << lod), p_fade + 1.f, 0 };
+	Color color{ 2.f / (1 << lod), p_fade, 0 };
 
 	set_instance_custom_data(p_instance, color);
 }
@@ -66,8 +66,8 @@ void DirectMultiMeshInstance::set_lod_and_fade(uint32_t p_instance, const uint8_
 void DirectMultiMeshInstance::set_instance_custom_data(uint32_t p_instance, const Color &p_custom_data) {
     if(!m_multimesh.is_valid())
     {
-      assert(0);
-    }
+		assert(0);
+	}
 
     VisualServer::get_singleton()->multimesh_instance_set_custom_data(m_multimesh, p_instance, p_custom_data);
 }
