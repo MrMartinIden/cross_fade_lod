@@ -13,7 +13,7 @@ static constexpr float step_fading = 1.f / 16;
 template <uint8_t IncrLod, uint8_t DecrLod>
 struct FadeComponent {
 
-	float m_incr_fade = step_fading;
+	float m_incr_fade = 0.f;
 	float m_decr_fade = 1.f;
 
 	static constexpr uint8_t m_incr_lod = IncrLod;
@@ -47,6 +47,8 @@ public:
 
 	void replace_nodes();
 
+	void remove_entities();
+
 	entt::registry m_registry;
 
 	template <uint8_t Index>
@@ -73,4 +75,6 @@ public:
 	Ref<ShaderMaterial> m_custom_material;
 
 	Vector3 m_manual_viewer_pos;
+
+	int m_lod_id;
 };

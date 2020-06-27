@@ -23,6 +23,8 @@ public:
 
 	void replace_nodes();
 
+	void remove_entities();
+
 protected:
 	static void _bind_methods();
 

@@ -19,6 +19,13 @@ CrossFadeLodEditorPlugin::CrossFadeLodEditorPlugin(EditorNode *p_editor) {
 		button->connect("pressed", this, "replace_nodes");
 		_toolbar->add_child(button);
 	}
+
+	{
+		Button *button = memnew(Button);
+		button->set_text(TTR("Remove entities"));
+		button->connect("pressed", this, "remove_entities");
+		_toolbar->add_child(button);
+	}
 }
 
 CrossFadeLodEditorPlugin::~CrossFadeLodEditorPlugin() {
@@ -26,6 +33,10 @@ CrossFadeLodEditorPlugin::~CrossFadeLodEditorPlugin() {
 
 void CrossFadeLodEditorPlugin::replace_nodes() {
 	cross_fading_lod->replace_nodes();
+}
+
+void CrossFadeLodEditorPlugin::remove_entities() {
+	cross_fading_lod->remove_entities();
 }
 
 bool CrossFadeLodEditorPlugin::forward_spatial_gui_input(Camera *p_camera, const Ref<InputEvent> &p_event) {
@@ -73,4 +84,5 @@ void CrossFadeLodEditorPlugin::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("cross_fading_lod_exited_scene"), &CrossFadeLodEditorPlugin::cross_fading_lod_exited_scene);
 	ClassDB::bind_method(D_METHOD("replace_nodes"), &CrossFadeLodEditorPlugin::replace_nodes);
+	ClassDB::bind_method(D_METHOD("remove_entities"), &CrossFadeLodEditorPlugin::remove_entities);
 }

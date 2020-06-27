@@ -98,6 +98,7 @@ void static_iterate(const real_t &distance, const std::array<uint16_t, 5> &arr, 
 							registry.emplace_or_replace<Lod<pair.first>>(entity);
 						}
 					} else if (!registry.has<Lod<pair.first>>(entity)) {
+						print_line(String{ "Created lod with id = " } + String::num_uint64(pair.first));
 						registry.emplace<Lod<pair.first>>(entity);
 					}
 				}
@@ -108,6 +109,10 @@ void static_iterate(const real_t &distance, const std::array<uint16_t, 5> &arr, 
 
 		static_iterate<Start + 1, End>(distance, arr, registry, entity);
 	}
+}
+
+void CrossFadeLod::remove_entities() {
+	m_registry.clear();
 }
 
 void CrossFadeLod::replace_nodes() {
@@ -153,13 +158,34 @@ void CrossFadeLod::replace_nodes() {
 					chunk.set_scenario(get_world());
 					chunk.set_material(m_custom_material);
 				}
-
-				current_scene->remove_child(node);
 			}
 		}
 	}
 
 	print_line(String{ "Created entity = " } + String::num_uint64(m_registry.size<Transform>()));
+
+	set_lod_by_distance(m_manual_viewer_pos);
+
+	auto func = [&]() {
+		for_constexpr<5>([&](auto index) {
+			DirectMultiMeshInstance &multimesh_instance = m_mesh_cache[index];
+
+			const auto &group = std::get<LevelLodGroup<index> >(groups).m_value;
+			auto instance_count = group.size();
+			multimesh_instance.set_instance_count(instance_count);
+
+			for (decltype(instance_count) i{ 0 }; i < instance_count; ++i) {
+				const auto entity = group[i];
+
+				const auto &transform = group.template get<Transform>(entity);
+				multimesh_instance.set_instance_transform(i, transform);
+
+				multimesh_instance.set_lod_and_fade(i, index, 1.f);
+			}
+		});
+	};
+
+	func();
 }
 
 void CrossFadeLod::set_lod_by_distance(const Vector3 &viewer_pos) {
@@ -191,11 +217,12 @@ void CrossFadeLod::update_fade() {
 
 			auto &fade = view_fading.get(entity);
 
-			if (fade.m_incr_fade != 1.f) {
+			if (fade.m_incr_fade < 1.f) {
 				fade.m_incr_fade += step_fading;
 				fade.m_decr_fade -= step_fading;
 
-				print_line(String{ "Fade of incr_lod = " } + String::num_real(fade.m_incr_fade));
+				//print_line(String{ "Fade of incr_lod = " } + String::num_real(fade.m_incr_fade));
+				//print_line(String{ "Fade of decr_lod = " } + String::num_real(fade.m_decr_fade));
 			} else {
 				m_registry.remove_if_exists<Lod<pair.second>, FadeComponent<pair.first, pair.second>>(entity);
 			}
@@ -208,7 +235,7 @@ void CrossFadeLod::set_mesh_by_lod() {
 	for_constexpr<5>([&](auto index) {
 		DirectMultiMeshInstance &multimesh_instance = m_mesh_cache[index];
 
-		auto &group = std::get<LevelLodGroup<index>>(groups).m_value;
+		const auto &group = std::get<LevelLodGroup<index> >(groups).m_value;
 		auto instance_count = group.size();
 		multimesh_instance.set_instance_count(instance_count);
 
@@ -228,9 +255,15 @@ void CrossFadeLod::set_mesh_by_lod() {
 						auto &fade = m_registry.get<FadeComp>(entity);
 
 						if constexpr (pair.first == index) {
-							multimesh_instance.set_lod_and_fade(i, index, fade.m_incr_fade);
+							print_line(String{ "Fade of incr_lod = " } + String::num_real(fade.m_incr_fade));
+							multimesh_instance.set_lod_and_fade(i,
+									index,
+									fade.m_incr_fade);
 						} else {
-							multimesh_instance.set_lod_and_fade(i, index, fade.m_decr_fade);
+							print_line(String{ "Fade of decr_lod = " } + String::num_real(fade.m_decr_fade));
+							multimesh_instance.set_lod_and_fade(i,
+									index,
+									fade.m_decr_fade);
 						}
 					}
 				}
@@ -267,5 +300,8 @@ void CrossFadeLod::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_custom_material"), &CrossFadeLod::get_custom_material);
 	ClassDB::bind_method(D_METHOD("set_custom_material", "material"), &CrossFadeLod::set_custom_material);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "custom_material", PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial"), "set_custom_material", "get_custom_material");
+	ClassDB::add_property(get_class_static(),
+			PropertyInfo(Variant::OBJECT, "custom_material", PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial"),
+			_scs_create("set_custom_material"),
+			_scs_create("get_custom_material"));
 }
